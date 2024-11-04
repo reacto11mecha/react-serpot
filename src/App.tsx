@@ -10,7 +10,10 @@ function App() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const wawawa = subscribe((d) => {console.table(d); setCount(d => d+1)});
+    const wawawa = subscribe((d) => {
+      console.table(d);
+      setCount((d) => d + 1);
+    });
 
     return () => {
       wawawa();
@@ -29,10 +32,18 @@ function App() {
       </div>
       <h1>Web Serial Test</h1>
       <div className="card">
-        <button onClick={() => {
-          if (portState === "closed") connect();
-          else if (portState === "open") disconnect(); 
-        }}>{portState === "closed" | portState === "closing" | portState === "opening" ? "Connect" : "Disconnect"}</button>
+        <button
+          onClick={() => {
+            if (portState === "closed") connect();
+            else if (portState === "open") disconnect();
+          }}
+        >
+          {portState === "closed" ||
+          portState === "closing" ||
+          portState === "opening"
+            ? "Connect"
+            : "Disconnect"}
+        </button>
         <p>Port state: {portState}</p>
         <p>Count: {count.toString(16)}</p>
       </div>

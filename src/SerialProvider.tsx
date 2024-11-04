@@ -26,7 +26,7 @@ export interface SerialContextValue {
   portState: PortState;
   connect(): Promise<boolean>;
   disconnect(): void;
-  send(message: number): Promise<boolean>;
+  send(message: number[]): Promise<boolean>;
   subscribe(callback: SerialMessageCallback): () => void;
 }
 export const SerialContext = createContext<SerialContextValue>({
@@ -50,7 +50,6 @@ const SerialProvider = ({
   const [canUseSerial] = useState(() => "serial" in navigator);
 
   const [portState, setPortState] = useState<PortState>("closed");
-  const [hasManuallyDisconnected, setHasManuallyDisconnected] = useState(false);
 
   const portRef = useRef<SerialPort | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
@@ -125,11 +124,9 @@ const SerialProvider = ({
                 incomingMessage = "";
               } else if (char === ">") {
                 const timestamp = Date.now();
-                Array.from(subscribersRef.current).forEach(
-                  ([name, callback]) => {
-                    callback({ value: incomingMessage, timestamp });
-                  },
-                );
+                Array.from(subscribersRef.current).forEach(([_, callback]) => {
+                  callback({ value: incomingMessage, timestamp });
+                });
 
                 // Send acknowledgment
                 await send([65]);
@@ -159,7 +156,6 @@ const SerialProvider = ({
       await port.open({ baudRate: 115200 });
       portRef.current = port;
       setPortState("open");
-      setHasManuallyDisconnected(false);
     } catch (error) {
       setPortState("closed");
       console.error("Could not open port");
@@ -197,7 +193,6 @@ const SerialProvider = ({
         portRef.current = null;
 
         // Update port state
-        setHasManuallyDisconnected(true);
         setPortState("closed");
       }
     }
