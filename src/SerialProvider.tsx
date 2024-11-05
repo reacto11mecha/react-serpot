@@ -13,6 +13,7 @@ import {
 // https://codelabs.developers.google.com/codelabs/web-serial
 
 export type PortState = "closed" | "closing" | "open" | "opening";
+export type BaudRate = 9600 | 115200;
 
 export type SerialMessage = {
   value: string;
@@ -24,6 +25,8 @@ type SerialMessageCallback = (message: SerialMessage) => void;
 export interface SerialContextValue {
   canUseSerial: boolean;
   portState: PortState;
+  baudRate: BaudRate;
+  setBaudRate: (desiredBaudRate: BaudRate) => void;
   connect(): Promise<boolean>;
   disconnect(): void;
   send(message: number[]): Promise<boolean>;
@@ -31,6 +34,8 @@ export interface SerialContextValue {
 }
 export const SerialContext = createContext<SerialContextValue>({
   canUseSerial: false,
+  baudRate: 9600,
+  setBaudRate: () => {},
   connect: () => Promise.resolve(false),
   disconnect: () => {},
   portState: "closed",
@@ -50,6 +55,7 @@ const SerialProvider = ({
   const [canUseSerial] = useState(() => "serial" in navigator);
 
   const [portState, setPortState] = useState<PortState>("closed");
+  const [baudRate, baudRateSetter] = useState<BaudRate>(9600);
 
   const portRef = useRef<SerialPort | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
@@ -61,7 +67,7 @@ const SerialProvider = ({
   /**
    * Send a message to the connected port
    *
-   * @param message string to send
+   * @param message array of string to send
    * @returns a boolean to know if the process completed or not
    */
   const send = async (message: number[]) => {
@@ -153,7 +159,7 @@ const SerialProvider = ({
    */
   const openPort = async (port: SerialPort) => {
     try {
-      await port.open({ baudRate: 115200 });
+      await port.open({ baudRate: baudRate as number });
       portRef.current = port;
       setPortState("open");
     } catch (error) {
@@ -197,6 +203,9 @@ const SerialProvider = ({
       }
     }
   };
+
+  const setBaudRate = (desiredBaudRate: BaudRate) =>
+    baudRateSetter(desiredBaudRate);
 
   /**
    * Event handler for when the port is disconnected unexpectedly.
@@ -242,6 +251,8 @@ const SerialProvider = ({
         canUseSerial,
         subscribe,
         portState,
+        baudRate,
+        setBaudRate,
         connect: manualConnectToPort,
         send,
         disconnect: manualDisconnectFromPort,

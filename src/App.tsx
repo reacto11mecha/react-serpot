@@ -3,22 +3,17 @@ import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 
-import { useSerial } from "./SerialProvider";
+import { useSerial, type BaudRate } from "./SerialProvider";
 
 function App() {
-  const { portState, disconnect, connect, subscribe } = useSerial();
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const wawawa = subscribe((d) => {
-      console.table(d);
-      setCount((d) => d + 1);
-    });
-
-    return () => {
-      wawawa();
-    };
-  }, []);
+  const {
+    canUseSerial,
+    portState,
+    disconnect,
+    connect,
+    baudRate,
+    setBaudRate,
+  } = useSerial();
 
   return (
     <>
@@ -32,6 +27,15 @@ function App() {
       </div>
       <h1>Web Serial Test</h1>
       <div className="card">
+        <select
+          value={String(baudRate)}
+          onChange={(d) => setBaudRate(parseInt(d.target.value) as BaudRate)}
+          disabled={portState === "opening" || portState === "open"}
+        >
+          <option value="9600">Baud rate: 9600</option>
+          <option value="115200">Baud rate: 115200</option>
+        </select>
+
         <button
           onClick={() => {
             if (portState === "closed") connect();
@@ -44,9 +48,34 @@ function App() {
             ? "Connect"
             : "Disconnect"}
         </button>
-        <p>Port state: {portState}</p>
-        <p>Count: {count.toString(16)}</p>
+        <p>Can use serial? {canUseSerial ? "yes" : "no"}</p>
+        <ChildElement />
       </div>
+    </>
+  );
+}
+
+function ChildElement() {
+  const { portState, subscribe } = useSerial();
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const unsubcribe = subscribe((d) => {
+      console.table(d);
+      setCount((d) => d + 1);
+    });
+
+    return () => {
+      unsubcribe();
+    };
+  }, []);
+
+  return (
+    <>
+      <p>Port state: {portState}</p>
+      <p>
+        Count: {count.toString(16)} | {count.toLocaleString("id-ID")}
+      </p>
     </>
   );
 }
